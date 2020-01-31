@@ -1,7 +1,17 @@
 <template>
   <div class="task-view">
     <div class="flex flex-col flex-grow items-start justify-between px-4">
-      {{ task.name }}
+      <input
+        type="text"
+        class="p-2 w-full mr-2 block text-xl font-bold"
+        :value="task.name"
+        @change="updateTaskProperty($event, 'name')"
+        @keyup.enter="updateTaskProperty($event, 'name')"/>
+      <textarea
+        class="relative w-full bg-transparent px-2 border mt-2 h-64 border-none leading-normal"
+        :value="task.description"
+        @change="updateTaskProperty($event, 'description')">
+      </textarea>
     </div>
   </div>
 </template>
@@ -10,6 +20,17 @@
 import { mapGetters } from 'vuex'
 
 export default {
+  methods: {
+    updateTaskProperty (event, key) {
+      // This should dispatch and action and not commit directly to the mutator
+      this.$store.commit('UPDATE_TASK', {
+        task: this.task,
+        key,
+        value: event.target.value
+      })
+      event.target.value = ''
+    }
+  },
   computed: {
     ...mapGetters(['getTask']),
     task () {
