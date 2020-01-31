@@ -28,7 +28,6 @@ export default {
         key,
         value: event.target.value
       })
-      event.target.value = ''
     }
   },
   computed: {

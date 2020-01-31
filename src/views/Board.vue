@@ -1,14 +1,26 @@
 <template>
   <div class="board">
     <div class="flex flex-row items-start">
-      <div class="column" v-for="(column, index) of board.columns" :key="index">
+      <div class="column"
+          v-for="(column, columnIndex) of board.columns"
+          :key="columnIndex"
+          draggable
+          @dragstart.self="pickUpColumn($event, columnIndex)"
+          @drop="moveTaskOrColumn($event, column.tasks, columnIndex)"
+          @dragover.prevent
+          @dragenter.prevent>
         <div class="flex items-center mb-2 font-bold">
           {{ column.name }}
         </div>
         <div class="list-reset">
           <div class="task"
-              v-for="task of column.tasks"
+              v-for="(task, taskIndex) of column.tasks"
               :key="task.id"
+              draggable
+              @dragstart="pickUpTask($event, taskIndex, columnIndex)"
+              @dragover.prevent
+              @dragenter.prevent
+              @drop.stop="moveTaskOrColumn($event, column.tasks, columnIndex, taskIndex)"
               @click="goToTask(task)">
             <span class="w-full flex-no-shrink font-bold">
               {{ task.name }}
@@ -17,6 +29,7 @@
               {{ task.description }}
             </p>
           </div>
+          <input type="text" class="block p-2 w-full bg-transparent" placeholder="+ Enter new task" @keyup.enter="createTask($event, column.tasks)"/>
         </div>
       </div>
     </div>
@@ -36,6 +49,54 @@ export default {
     },
     close () {
       this.$router.push({ name: 'board' })
+    },
+    createTask (event, tasks) {
+      // This should dispatch and action and not commit directly to the mutator
+      this.$store.commit('CREATE_TASK', {
+        name: event.target.value,
+        tasks
+      })
+      event.target.value = ''
+    },
+    pickUpTask (event, taskIndex, fromColumnIndex) {
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.dropEffect = 'move'
+      event.dataTransfer.setData('type', 'task')
+      event.dataTransfer.setData('from-task-index', taskIndex)
+      event.dataTransfer.setData('from-column-index', fromColumnIndex)
+    },
+    pickUpColumn (event, fromColumnIndex) {
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.dropEffect = 'move'
+      event.dataTransfer.setData('type', 'column')
+      event.dataTransfer.setData('from-column-index', fromColumnIndex)
+    },
+    moveTaskOrColumn (event, toTasks, toColumnIndex, toTaskIndex) {
+      const type = event.dataTransfer.getData('type')
+      if (type === 'task') {
+        const sanitizedIndex = (toTaskIndex !== undefined) ? toTaskIndex : toTasks.length
+        this.moveTask(event, toTasks, sanitizedIndex)
+      } else {
+        this.moveColumn(event, toColumnIndex)
+      }
+    },
+    moveTask (event, toTasks, toTaskIndex) {
+      const fromColumnIndex = event.dataTransfer.getData('from-column-index')
+      const fromTasks = this.board.columns[fromColumnIndex].tasks
+      const fromTaskIndex = event.dataTransfer.getData('from-task-index')
+      this.$store.commit('MOVE_TASK', {
+        fromTasks,
+        toTasks,
+        fromTaskIndex,
+        toTaskIndex
+      })
+    },
+    moveColumn (event, toColumnIndex) {
+      const fromColumnIndex = event.dataTransfer.getData('from-column-index')
+      this.$store.commit('MOVE_COLUMN', {
+        fromColumnIndex,
+        toColumnIndex
+      })
     }
   },
   computed: {
