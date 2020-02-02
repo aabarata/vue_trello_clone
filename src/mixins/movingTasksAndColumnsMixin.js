@@ -4,37 +4,37 @@ export default {
       type: Object,
       require: true
     },
+    column: {
+      type: Object,
+      require: true
+    },
     columnIndex: {
       type: Number,
       required: true
     }
   },
   methods: {
-    moveTaskOrColumn (event, toTasks, toColumnIndex, toTaskIndex) {
-      const type = event.dataTransfer.getData('type')
-      if (type === 'task') {
-        const sanitizedIndex = (toTaskIndex !== undefined) ? toTaskIndex : toTasks.length
-        this.moveTask(event, toTasks, sanitizedIndex)
+    moveTaskOrColumn (transferData) {
+      if (transferData.type === 'task') {
+        this.moveTask(transferData)
       } else {
-        this.moveColumn(event, toColumnIndex)
+        this.moveColumn(transferData)
       }
     },
-    moveTask (event, toTasks, toTaskIndex) {
-      const fromColumnIndex = event.dataTransfer.getData('from-column-index')
+    moveTask ({ fromColumnIndex, fromTaskIndex }) {
       const fromTasks = this.board.columns[fromColumnIndex].tasks
-      const fromTaskIndex = event.dataTransfer.getData('from-task-index')
       this.$store.commit('MOVE_TASK', {
         fromTasks,
-        toTasks,
         fromTaskIndex,
-        toTaskIndex
+        toTasks: this.column.tasks,
+        // this.toTaskIndex is in the component ColumnTask
+        toTaskIndex: this.taskIndex
       })
     },
-    moveColumn (event, toColumnIndex) {
-      const fromColumnIndex = event.dataTransfer.getData('from-column-index')
+    moveColumn ({ fromColumnIndex }) {
       this.$store.commit('MOVE_COLUMN', {
         fromColumnIndex,
-        toColumnIndex
+        toColumnIndex: this.columnIndex
       })
     }
   }
